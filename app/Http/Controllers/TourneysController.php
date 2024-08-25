@@ -9,7 +9,19 @@ class TourneysController extends Controller
 {
     public function index()
     {
-        $tourneys = Tourney::all();
+        $tourneys = Tourney::with('creator')->get();
+
+        // Transformar os dados para incluir apenas o nome do criador
+        $tourneys = $tourneys->map(function ($tourney) {
+            return [
+                'id' => $tourney->id,
+                'name' => $tourney->name,
+                'description' => $tourney->description,
+                'theme_name' => $tourney->theme_name,
+                'creator_name' => $tourney->creator->name,  // Inclui o nome do criador
+            ];
+        });
+
         return response()->json($tourneys);
     }
 

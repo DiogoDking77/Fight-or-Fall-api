@@ -15,4 +15,11 @@ class Tourney extends Model
         'user_creator_id',
         'theme_name',
     ];
+
+    // Define a relação com o modelo User
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'user_creator_id');
+    }
 }
+
