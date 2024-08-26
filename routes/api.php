@@ -7,6 +7,7 @@ use App\Http\Controllers\ThemeController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\TourneysController;
+use Illuminate\Support\Facades\Auth;
 
 /*
 |--------------------------------------------------------------------------
@@ -41,5 +42,13 @@ Route::get('/register', [RegisteredUserController::class, 'create'])->name('regi
 // Processar registro
 Route::post('/register', [RegisteredUserController::class, 'store']);
 
+Route::middleware('auth:sanctum')->get('/check-token', function (Request $request) {
+    return response()->json([
+        'user_creator_id' => $request->user()->id,
+        'user_name' => $request->user()->name,
+    ]);
+});
+
 Route::get('/tourneys', [TourneysController::class, 'index']);
 Route::post('/tourneys', [TourneysController::class, 'store']);
+Route::get('/tourneys/{id}', [TourneysController::class, 'show']);

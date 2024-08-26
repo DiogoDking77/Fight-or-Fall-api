@@ -39,4 +39,26 @@ class TourneysController extends Controller
 
         return response()->json($tourney, 201);
     }
+
+
+    public function show($id)
+    {
+        try {
+            // Buscar o torneio e carregar o relacionamento com o usuário criador
+            $tourney = Tourney::with('creator')->findOrFail($id);
+
+            // Criar a resposta com os dados do torneio e o nome do criador
+            $response = [
+                'id' => $tourney->id,
+                'name' => $tourney->name,
+                'description' => $tourney->description,
+                'theme_name' => $tourney->theme_name,
+                'creator_name' => $tourney->creator->name, // Nome do criador
+            ];
+
+            return response()->json($response, 200);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Tourney not found', 'message' => $e->getMessage()], 404);
+        }
+    }
 }
