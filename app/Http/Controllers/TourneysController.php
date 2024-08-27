@@ -61,4 +61,26 @@ class TourneysController extends Controller
             return response()->json(['error' => 'Tourney not found', 'message' => $e->getMessage()], 404);
         }
     }
+
+    public function getTourneysByCreator($creatorId)
+    {
+        // Busca os torneios filtrados pelo ID do criador e carrega o relacionamento com o criador
+        $tourneys = Tourney::with('creator')
+            ->where('user_creator_id', $creatorId)
+            ->get();
+
+        // Transformar os dados para incluir apenas o nome do criador
+        $tourneys = $tourneys->map(function ($tourney) {
+            return [
+                'id' => $tourney->id,
+                'name' => $tourney->name,
+                'description' => $tourney->description,
+                'theme_name' => $tourney->theme_name,
+                'creator_name' => $tourney->creator->name, // Inclui o nome do criador
+            ];
+        });
+
+        return response()->json($tourneys);
+    }
+
 }

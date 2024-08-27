@@ -52,3 +52,5 @@ Route::middleware('auth:sanctum')->get('/check-token', function (Request $reques
 Route::get('/tourneys', [TourneysController::class, 'index']);
 Route::post('/tourneys', [TourneysController::class, 'store']);
 Route::get('/tourneys/{id}', [TourneysController::class, 'show']);
+Route::get('/tourneys/creator/{creatorId}', [TourneysController::class, 'getTourneysByCreator']);
+
