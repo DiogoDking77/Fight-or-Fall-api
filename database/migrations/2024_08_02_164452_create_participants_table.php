@@ -16,12 +16,7 @@ return new class extends Migration
         Schema::create('participants', function (Blueprint $table) {
             $table->id();
             $table->string('name')->unique()->notNullable();
-            $table->integer('n_games_played')->notNullable();
-            $table->integer('points')->nullable();
-            $table->integer('n_wins')->nullable();
-            $table->integer('n_draws')->nullable();
-            $table->integer('n_loses')->nullable();
-            $table->integer('n_tie_breaker_atb')->nullable();
+            $table->string('current_position')->notNullable();
             $table->foreignId('id_edition')->constrained('editions')->onDelete('cascade');
             $table->timestamps();
         });

@@ -13,16 +13,10 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('formats', function (Blueprint $table) {
+        Schema::create('groups', function (Blueprint $table) {
             $table->id();
             $table->string('name')->notNullable();
-            $table->integer('n_participants')->notNullable();
-            $table->integer('n_groups')->nullable();
-            $table->integer('n_groups_w')->nullable();
-            $table->integer('pts_w')->nullable();
-            $table->integer('pts_d')->nullable();
-            $table->integer('pts_l')->nullable();
-            $table->text('tie_breaker_rule')->nullable();
+            $table->integer('n_winners')->notNullable();
             $table->timestamps();
         });
     }
@@ -34,6 +28,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('formats');
+        Schema::dropIfExists('groups');
     }
 };

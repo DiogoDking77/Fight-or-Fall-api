@@ -13,9 +13,10 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('edition_format', function (Blueprint $table) {
+        Schema::create('phases', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('id_format')->constrained('formats')->onDelete('cascade');
+            $table->string('type')->notNullable();
+            $table->integer('phase_order')->notNullable();
             $table->foreignId('id_edition')->constrained('editions')->onDelete('cascade');
             $table->timestamps();
         });
@@ -28,6 +29,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('edition_format');
+        Schema::dropIfExists('phases');
     }
 };
