@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\TourneysController;
 use App\Http\Controllers\EditionController;
+use App\Http\Controllers\MatchController;
 
 /*
 |--------------------------------------------------------------------------
@@ -96,6 +97,8 @@ Route::post('/editions/{edition_id}/phases', [PhaseController::class, 'store']);
  * Exemplo de Rota Simples
  */
 Route::get('/data', [ExampleController::class, 'getData']);
+
+Route::post('/tournaments/single-elimination', [MatchController::class, 'createSingleEliminationTournament']);
 
 
 
