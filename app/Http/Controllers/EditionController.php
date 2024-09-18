@@ -44,59 +44,68 @@ class EditionController extends Controller
         $edition = Edition::create($validated);
 
         // Chamar o método para criar as fases automaticamente com base no tipo de edição
-        $this->createPhases($edition);
+        $phaseIds = $this->createPhases($edition); // Obter os IDs das fases criadas
 
-        // Retornar a resposta com o objeto criado
+        // Retornar a resposta com o objeto criado e os IDs das fases
         return response()->json([
             'message' => 'Edição e fases criadas com sucesso!',
             'edition' => $edition,
+            'phases_ids' => $phaseIds, // Inclui os IDs das fases criadas
         ], 201);
     }
 
     /**
-     * Cria fases automaticamente baseado no tipo da edição.
+     * Cria fases automaticamente baseado no tipo da edição e retorna os IDs.
      *
      * @param  \App\Models\Edition  $edition
-     * @return void
+     * @return array
      */
     private function createPhases(Edition $edition)
     {
         $type = $edition->type;
+        $phaseIds = []; // Armazena os IDs das fases criadas
 
         if ($type === 'Single Elimination' || $type === 'Double Elimination' || $type === 'Round Robin') {
             // Criar uma única fase com phase_order = 1
-            Phase::create([
+            $phase = Phase::create([
                 'type' => $type,
                 'phase_order' => 1,
                 'id_edition' => $edition->id,
             ]);
+            $phaseIds[] = $phase->id; // Armazena o ID da fase
         } elseif ($type === 'Groups and Knockout') {
             // Criar duas fases: Round Robin com phase_order = 1 e Single Elimination com phase_order = 2
-            Phase::create([
+            $phase1 = Phase::create([
                 'type' => 'Round Robin',
                 'phase_order' => 1,
                 'id_edition' => $edition->id,
             ]);
+            $phaseIds[] = $phase1->id; // Armazena o ID da fase 1
 
-            Phase::create([
+            $phase2 = Phase::create([
                 'type' => 'Single Elimination',
                 'phase_order' => 2,
                 'id_edition' => $edition->id,
             ]);
+            $phaseIds[] = $phase2->id; // Armazena o ID da fase 2
         } elseif ($type === 'Groups and Double Knockout') {
             // Criar duas fases: Round Robin com phase_order = 1 e Double Elimination com phase_order = 2
-            Phase::create([
+            $phase1 = Phase::create([
                 'type' => 'Round Robin',
                 'phase_order' => 1,
                 'id_edition' => $edition->id,
             ]);
+            $phaseIds[] = $phase1->id; // Armazena o ID da fase 1
 
-            Phase::create([
+            $phase2 = Phase::create([
                 'type' => 'Double Elimination',
                 'phase_order' => 2,
                 'id_edition' => $edition->id,
             ]);
+            $phaseIds[] = $phase2->id; // Armazena o ID da fase 2
         }
+
+        return $phaseIds; // Retorna a lista de IDs das fases criadas
     }
 
     /**
