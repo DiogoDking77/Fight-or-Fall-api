@@ -93,6 +93,7 @@ class MatchController extends Controller
             // Quarta Etapa: Criar brackets
             $brackets = [];
             foreach ($rounds as $roundMatches) {
+                $roundBrackets = [];
                 foreach ($roundMatches as $matchId) {
                     $isFinal = $matchId === end($rounds)[0]; // Se for o último jogo (a final)
                     $bracket = Bracket::create([
@@ -102,29 +103,37 @@ class MatchController extends Controller
                         'loser_match_id' => null,
                         'phase_id' => $validated['id_phase'],
                     ]);
-                    
+
                     // Atualizar a match com o bracket id
                     Matches::where('id', $matchId)->update([
                         'id_bracket' => $bracket->id,
                     ]);
 
-                    $brackets[] = $bracket->id;
+                    $roundBrackets[] = $bracket->id; // Adicionar os brackets da rodada
                 }
+                $brackets[] = $roundBrackets; // Adicionar a lista de brackets da rodada
             }
 
             // Quinta Etapa: Atualizar os vencedores que se qualificam para a próxima partida
             for ($roundIndex = 0; $roundIndex < count($rounds) - 1; $roundIndex++) {
                 $currentRoundMatches = $rounds[$roundIndex];
+                $currentRoundBracket = $brackets[$roundIndex];
                 $nextRoundMatches = $rounds[$roundIndex + 1];
 
                 for ($i = 0; $i < count($currentRoundMatches) / 2; $i++) {
-                    $winnerMatch1 = $currentRoundMatches[$i * 2];
-                    $winnerMatch2 = $currentRoundMatches[$i * 2 + 1];
+                    $winnerBracket1 = $currentRoundBracket[$i * 2];
+                    $winnerBracket2 = $currentRoundBracket[$i * 2 + 1];
                     $nextMatch = $nextRoundMatches[$i];
 
                     // Atualiza o bracket para saber para qual partida o vencedor se qualifica
                     Bracket::where('winner_match_id', null)
-                        ->where('id', $nextMatch)
+                        ->where('id', $winnerBracket1)
+                        ->update([
+                            'winner_match_id' => $nextMatch,
+                        ]);
+
+                    Bracket::where('winner_match_id', null)
+                        ->where('id', $winnerBracket2)
                         ->update([
                             'winner_match_id' => $nextMatch,
                         ]);
