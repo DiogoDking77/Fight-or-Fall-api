@@ -100,5 +100,7 @@ Route::get('/data', [ExampleController::class, 'getData']);
 
 Route::post('/tournaments/single-elimination', [MatchController::class, 'createSingleEliminationTournament']);
 
+Route::get('/phase/{phase_id}/matches', [MatchController::class, 'getPhaseMatches']);
+
 
 

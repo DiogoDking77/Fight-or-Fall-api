@@ -28,34 +28,24 @@ class RegisteredUserController extends Controller
      *
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
-        // Validação dos dados da requisição
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        // Criação do usuário
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
         ]);
 
-        // Login automático
+        event(new Registered($user));
+
         Auth::login($user);
 
-        // Geração do token (se estiver usando token para autenticação)
-        $token = $user->createToken('YourAppName')->plainTextToken;
-
-        // Retorno de resposta JSON
-        return response()->json([
-            'message' => 'User registered and logged in successfully.',
-            'token' => $token,
-            'user' => $user
-        ], 201); // Código 201 indica criação bem-sucedida
+        return redirect(RouteServiceProvider::HOME);
     }
-
 }

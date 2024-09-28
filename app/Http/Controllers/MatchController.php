@@ -159,4 +159,78 @@ class MatchController extends Controller
             ], 500);
         }
     }
+
+    public function getPhaseMatches($phase_id)
+    {
+        // Validação para verificar se a fase existe
+        $phase = Phase::find($phase_id);
+
+        if (!$phase) {
+            return response()->json([
+                'message' => 'Phase not found',
+            ], 404);
+        }
+
+        // Buscar todas as partidas da fase, ordenadas por rodada
+        $matches = Matches::where('phase_id', $phase_id)
+            ->orderBy('round')
+            ->get();
+
+        if ($matches->isEmpty()) {
+            return response()->json([
+                'message' => 'No matches found for this phase',
+            ], 404);
+        }
+
+        // Agrupar as partidas por rodada
+        $rounds = [];
+        foreach ($matches as $match) {
+            $roundNumber = 'round' . $match->round;
+
+            // Obter informações dos participantes
+            $participant1 = $match->participant1;
+            $participant2 = $match->participant2;
+
+            // Obter informações do bracket associado à partida
+            $bracket = Bracket::find($match->id_bracket);
+
+            // Criar o formato do jogo
+            $gameData = [
+                'id_match' => $match->id,
+                'round' => $match->round,
+                'participant_1' => [
+                    'name' => $participant1 ? $participant1->name : null,
+                    'current_position' => $participant1 ? $participant1->current_position : null,
+                ],
+                'participant_2' => [
+                    'name' => $participant2 ? $participant2->name : null,
+                    'current_position' => $participant2 ? $participant2->current_position : null,
+                ],
+                'score1' => $match->score1,
+                'score2' => $match->score2,
+                'id_winner' => $match->id_winner,
+                'id_loser' => $match->id_loser,
+                'id_group' => $match->id_group,
+                'id_bracket' => $bracket ? [
+                    'is_winner_bracket' => $bracket->is_winner_bracket,
+                    'is_final' => $bracket->is_final,
+                    'winner_match_id' => $bracket->winner_match_id,
+                    'loser_match_id' => $bracket->loser_match_id,
+                ] : null,
+            ];
+
+            // Agrupar os jogos pela rodada
+            if (!isset($rounds[$roundNumber])) {
+                $rounds[$roundNumber] = [];
+            }
+            $rounds[$roundNumber][] = $gameData;
+        }
+
+        // Retornar o formato esperado
+        return response()->json([
+            'phase_id' => $phase_id,
+            'edition_id' => $phase->id_edition,
+            'phase_games' => $rounds,
+        ], 200);
+    }
 }

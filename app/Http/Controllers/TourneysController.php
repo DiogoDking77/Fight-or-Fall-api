@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Tourney;
 use Illuminate\Http\Request;
+use App\Http\Controllers\EditionController;
 
 class TourneysController extends Controller
 {
@@ -47,7 +48,7 @@ class TourneysController extends Controller
             // Buscar o torneio e carregar o relacionamento com o usuário criador
             $tourney = Tourney::with('creator')->findOrFail($id);
 
-            // Criar a resposta com os dados do torneio e o nome do criador
+            // Criar a resposta inicial com os dados do torneio e o nome do criador
             $response = [
                 'id' => $tourney->id,
                 'name' => $tourney->name,
@@ -55,6 +56,18 @@ class TourneysController extends Controller
                 'theme_name' => $tourney->theme_name,
                 'creator_name' => $tourney->creator->name, // Nome do criador
             ];
+
+            // Reutilizar o método do EditionController para buscar as edições associadas ao torneio
+            $editionController = new EditionController();
+            $editionsResponse = $editionController->getByTourneyId($id);
+            $editionsData = $editionsResponse->getData(); // Obter os dados da resposta
+
+            // Verificar se o status das edições foi 200 (encontrado)
+            if ($editionsResponse->status() === 200) {
+                $response['editions'] = $editionsData->editions; // Adicionar as edições à resposta
+            } else {
+                $response['editions'] = []; // Caso não haja edições, retorna uma lista vazia
+            }
 
             return response()->json($response, 200);
         } catch (\Exception $e) {
