@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\TourneysController;
 use App\Http\Controllers\EditionController;
 use App\Http\Controllers\MatchController;
+use App\Http\Controllers\PhaseController;
 
 /*
 |--------------------------------------------------------------------------
@@ -90,17 +91,22 @@ Route::prefix('editions')->group(function () {
     Route::delete('/{id}', [EditionController::class, 'destroy']);
 });
 
+// Criar fases para uma edição específica
 Route::post('/editions/{edition_id}/phases', [PhaseController::class, 'store']);
-
 
 /**
  * Exemplo de Rota Simples
  */
 Route::get('/data', [ExampleController::class, 'getData']);
 
+/**
+ * Rotas de Torneios de Eliminação Simples (Single Elimination)
+ */
+// Criar um torneio de eliminação simples
 Route::post('/tournaments/single-elimination', [MatchController::class, 'createSingleEliminationTournament']);
 
+// Listar partidas de uma fase específica
 Route::get('/phase/{phase_id}/matches', [MatchController::class, 'getPhaseMatches']);
 
-
-
+// Atualizar os resultados das partidas de uma fase específica
+Route::post('/phase/{phase_id}/update-single-elimination', [MatchController::class, 'updateSingleEliminationResults']);

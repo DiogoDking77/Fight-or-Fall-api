@@ -171,9 +171,10 @@ class MatchController extends Controller
             ], 404);
         }
 
-        // Buscar todas as partidas da fase, ordenadas por rodada
+        // Buscar todas as partidas da fase, ordenadas por rodada e, em caso de empate, por id
         $matches = Matches::where('phase_id', $phase_id)
-            ->orderBy('round')
+            ->orderBy('round') // Primeiro por rodada
+            ->orderBy('id')    // Depois por id
             ->get();
 
         if ($matches->isEmpty()) {
@@ -233,4 +234,134 @@ class MatchController extends Controller
             'phase_games' => $rounds,
         ], 200);
     }
+
+
+    public function updateSingleEliminationResults(Request $request, $phase_id)
+    {
+        DB::beginTransaction();
+
+        try {
+            // Validar a existência da fase
+            $phase = Phase::find($phase_id);
+            if (!$phase) {
+                return response()->json(['message' => 'Phase not found'], 404);
+            }
+
+            // Validar o formato do request
+            $validated = $request->validate([
+                '*.id_match' => 'required|integer|exists:matches,id',
+                '*.round' => 'required|integer|min:1',
+                '*.score1' => 'nullable|integer',
+                '*.score2' => 'nullable|integer',
+                '*.participant_1.name' => 'nullable|string',
+                '*.participant_2.name' => 'nullable|string',
+                '*.id_bracket.winner_match_id' => 'nullable|integer|exists:matches,id',
+            ]);
+
+            // Iterar sobre cada partida recebida para atualizar os resultados
+            foreach ($request->all() as $matchData) {
+                $match = Matches::find($matchData['id_match']);
+
+                // Verificar condições para reverter a qualificação
+                if (
+                    (is_null($matchData['score1']) && !is_null($match->id_winner)) ||
+                    (is_null($matchData['score2']) && !is_null($match->id_winner)) ||
+                    (is_null($matchData['score1']) && is_null($matchData['score2']) && !is_null($match->id_winner)) ||
+                    (is_null($match->id_participant1) || is_null($match->id_participant2))
+                ) {
+                    // Reverter a qualificação
+                    $winnerId = $match->id_winner;
+                    $loserId = $match->id_loser;
+
+                    // Definir o id_winner e id_loser como nulo
+                    $match->update([
+                        'id_winner' => null,
+                        'id_loser' => null,
+                        'score1' => null,
+                        'score2' => null,
+                    ]);
+
+                    // Redefinir current_position dos participantes
+                    if ($winnerId) {
+                        Participant::where('id', $winnerId)->update(['current_position' => null]);
+                    }
+                    if ($loserId) {
+                        Participant::where('id', $loserId)->update(['current_position' => null]);
+                    }
+
+                    // Verificar se há uma próxima partida onde o vencedor estava qualificado
+                    if (isset($matchData['id_bracket']['winner_match_id'])) {
+                        $nextMatch = Matches::find($matchData['id_bracket']['winner_match_id']);
+                        if ($nextMatch) {
+                            if ($nextMatch->id_participant1 === $winnerId) {
+                                $nextMatch->update(['id_participant1' => null, 'score1' => null, 'score2' => null]);
+                            } elseif ($nextMatch->id_participant2 === $winnerId) {
+                                $nextMatch->update(['id_participant2' => null, 'score1' => null, 'score2' => null]);
+                            }
+                        }
+                    }
+
+                    continue; // Passa para a próxima partida
+                }
+
+                // Se ambos os scores estiverem presentes e diferentes, determinar o vencedor
+                if (is_numeric($matchData['score1']) && is_numeric($matchData['score2']) && $matchData['score1'] !== $matchData['score2']) {
+                    $winnerId = $matchData['score1'] > $matchData['score2'] ? $match->id_participant1 : $match->id_participant2;
+                    $loserId = $matchData['score1'] > $matchData['score2'] ? $match->id_participant2 : $match->id_participant1;
+
+                    // Atualizar o resultado da partida
+                    $match->update([
+                        'score1' => $matchData['score1'],
+                        'score2' => $matchData['score2'],
+                        'id_winner' => $winnerId,
+                        'id_loser' => $loserId,
+                    ]);
+
+                    // Atualizar as posições dos participantes
+                    Participant::where('id', $loserId)->update(['current_position' => 'Round ' . $matchData['round']]);
+
+                    // Verificar se há uma próxima rodada
+                    if (isset($matchData['id_bracket']['winner_match_id'])) {
+                        $nextMatch = Matches::find($matchData['id_bracket']['winner_match_id']);
+                        if ($nextMatch) {
+                            if ($nextMatch->id_participant1 === $winnerId || $nextMatch->id_participant2 === $winnerId) {
+                                continue; // Não faz nada, o vencedor já está qualificado
+                            }
+
+                            // Verificar se o perdedor está na próxima partida
+                            if ($nextMatch->id_participant1 === $loserId || $nextMatch->id_participant2 === $loserId) {
+                                if ($nextMatch->id_participant1 === $loserId) {
+                                    $nextMatch->update(['id_participant1' => $winnerId]);
+                                } elseif ($nextMatch->id_participant2 === $loserId) {
+                                    $nextMatch->update(['id_participant2' => $winnerId]);
+                                }
+                            } else {
+                                if (!$nextMatch->id_participant1) {
+                                    $nextMatch->update(['id_participant1' => $winnerId]);
+                                } elseif (!$nextMatch->id_participant2) {
+                                    $nextMatch->update(['id_participant2' => $winnerId]);
+                                }
+                            }
+                        }
+
+                        // Atualizar a posição do vencedor para a próxima rodada
+                        Participant::where('id', $winnerId)->update(['current_position' => 'Round ' . ($matchData['round'] + 1)]);
+                    } else {
+                        Participant::where('id', $winnerId)->update(['current_position' => 'Winner']);
+                    }
+                }
+            }
+
+            DB::commit();
+
+            return response()->json(['message' => 'Tournament results updated successfully'], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json(['message' => 'Failed to update tournament results', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+
+
 }
