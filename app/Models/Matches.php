@@ -7,7 +7,16 @@ use Illuminate\Database\Eloquent\Model;
 class Matches extends Model
 {
     protected $fillable = [
-        'round', 'score1', 'score2', 'id_participant1', 'id_participant2', 'id_winner', 'id_loser', 'id_group', 'id_bracket'
+        'round', 
+        'phase_id', // Adicione esta linha
+        'score1', 
+        'score2', 
+        'id_participant1', 
+        'id_participant2', 
+        'id_winner', 
+        'id_loser', 
+        'id_group', 
+        'id_bracket'
     ];
 
     public function participant1()
